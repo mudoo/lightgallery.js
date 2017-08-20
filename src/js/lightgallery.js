@@ -29,6 +29,7 @@ window.lgData = {
 
 window.lgModules = {};
 var defaults = {
+    container: null,
 
     mode: 'lg-slide',
 
@@ -42,11 +43,13 @@ var defaults = {
     width: '100%',
     addClass: '',
     startClass: 'lg-start-zoom',
+    mask: true,
     backdropDuration: 150,
     hideBarsDelay: 6000,
 
     useLeft: false,
 
+    close: true,
     closable: true,
     loop: true,
     escKey: true,
@@ -147,6 +150,7 @@ function Plugin(element, options) {
             this.items = this.el.children;
         }
     }
+    this.count = this.items.length;
 
     // .lg-item
 
@@ -165,8 +169,8 @@ Plugin.prototype.init = function() {
     var _this = this;
 
     // s.preload should not be more than $item.length
-    if (_this.s.preload > _this.items.length) {
-        _this.s.preload = _this.items.length;
+    if (_this.s.preload > _this.count) {
+        _this.s.preload = _this.count;
     }
 
     // if dynamic option is enabled execute immediately
@@ -199,7 +203,7 @@ Plugin.prototype.init = function() {
         }
     } else {
 
-        for (var i = 0; i < _this.items.length; i++) {
+        for (var i = 0; i < _this.count; i++) {
 
             /*jshint loopfunc: true */
             (function(index) {
@@ -244,7 +248,7 @@ Plugin.prototype.build = function(index) {
         _this.keyPress();
     }
 
-    if (_this.items.length > 1) {
+    if (_this.count > 1) {
 
         _this.arrow();
 
@@ -265,19 +269,20 @@ Plugin.prototype.build = function(index) {
     utils.trigger(_this.el, 'onAfterOpen');
 
     // Hide controllers if mouse doesn't move for some period
-    utils.on(_this.outer, 'mousemove.lg click.lg touchstart.lg', function() {
+    if (_this.s.hideBarsDelay) {
+        utils.on(_this.outer, 'mousemove.lg click.lg touchstart.lg', function() {
 
-        utils.removeClass(_this.outer, 'lg-hide-items');
+            utils.removeClass(_this.outer, 'lg-hide-items');
 
-        clearTimeout(_this.hideBartimeout);
+            clearTimeout(_this.hideBartimeout);
 
-        // Timeout will be cleared on each slide movement also
-        _this.hideBartimeout = setTimeout(function() {
-            utils.addClass(_this.outer, 'lg-hide-items');
-        }, _this.s.hideBarsDelay);
+            // Timeout will be cleared on each slide movement also
+            _this.hideBartimeout = setTimeout(function() {
+                utils.addClass(_this.outer, 'lg-hide-items');
+            }, _this.s.hideBarsDelay);
 
-    });
-
+        });
+    }
 };
 
 Plugin.prototype.structure = function() {
@@ -288,16 +293,19 @@ Plugin.prototype.structure = function() {
     var template;
     var _this = this;
 
-    document.body.insertAdjacentHTML('beforeend', '<div class="lg-backdrop"></div>');
-    utils.setVendor(document.querySelector('.lg-backdrop'), 'TransitionDuration', this.s.backdropDuration + 'ms');
+    var container = this.s.container || document.body;
+    if (this.s.mask) {
+        container.insertAdjacentHTML('beforeend', '<div class="lg-backdrop"></div>');
+        utils.setVendor(document.querySelector('.lg-backdrop'), 'TransitionDuration', this.s.backdropDuration + 'ms');
+    }
 
     // Create gallery items
-    for (i = 0; i < this.items.length; i++) {
+    for (i = 0; i < this.count; i++) {
         list += '<div class="lg-item"></div>';
     }
 
     // Create controlls
-    if (this.s.controls && this.items.length > 1) {
+    if (this.s.controls && this.count > 1) {
         controls = '<div class="lg-actions">' +
             '<div class="lg-prev lg-icon">' + this.s.prevHtml + '</div>' +
             '<div class="lg-next lg-icon">' + this.s.nextHtml + '</div>' +
@@ -312,14 +320,14 @@ Plugin.prototype.structure = function() {
         '<div class="lg" style="width:' + this.s.width + '; height:' + this.s.height + '">' +
         '<div class="lg-inner">' + list + '</div>' +
         '<div class="lg-toolbar group">' +
-        '<span class="lg-close lg-icon"></span>' +
+        // '<span class="lg-close lg-icon"></span>' +
         '</div>' +
         controls +
         subHtmlCont +
         '</div>' +
         '</div>';
 
-    document.body.insertAdjacentHTML('beforeend', template);
+    container.insertAdjacentHTML('beforeend', template);
     this.outer = document.querySelector('.lg-outer');
     this.___slide = this.outer.querySelectorAll('.lg-item');
 
@@ -355,7 +363,7 @@ Plugin.prototype.structure = function() {
 
     utils.addClass(this.outer, this.s.mode);
 
-    if (this.s.enableDrag && this.items.length > 1) {
+    if (this.s.enableDrag && this.count > 1) {
         utils.addClass(this.outer, 'lg-grab');
     }
 
@@ -369,15 +377,19 @@ Plugin.prototype.structure = function() {
         utils.setVendor(inner, 'TransitionDuration', this.s.speed + 'ms');
     }
 
-    setTimeout(function() {
-        utils.addClass(document.querySelector('.lg-backdrop'), 'in');
-    });
-
+    if (this.s.mask) {
+        setTimeout(function() {
+            utils.addClass(document.querySelector('.lg-backdrop'), 'in');
+        });
+    }
 
     setTimeout(function() {
         utils.addClass(_this.outer, 'lg-visible');
     }, this.s.backdropDuration);
 
+    if (this.s.close) {
+        this.outer.querySelector('.lg-toolbar').insertAdjacentHTML('beforeend', '<span class="lg-close lg-icon"></span>');
+    }
     if (this.s.download) {
         this.outer.querySelector('.lg-toolbar').insertAdjacentHTML('beforeend', '<a id="lg-download" target="_blank" download class="lg-download lg-icon"></a>');
     }
@@ -430,7 +442,7 @@ Plugin.prototype.doCss = function() {
  */
 Plugin.prototype.isVideo = function(src, index) {
 
-    if(!src) {
+    if (!src) {
         throw new Error("Make sure that slide " + index + " has an image/video src");
     }
 
@@ -476,8 +488,22 @@ Plugin.prototype.isVideo = function(src, index) {
  *  Ex: 1/10
  */
 Plugin.prototype.counter = function() {
-    if (this.s.counter) {
-        this.outer.querySelector(this.s.appendCounterTo).insertAdjacentHTML('beforeend', '<div id="lg-counter"><span id="lg-counter-current">' + (parseInt(this.index, 10) + 1) + '</span> / <span id="lg-counter-all">' + this.items.length + '</span></div>');
+    var _this = this;
+    if (_this.s.counter) {
+        _this.outer.querySelector(_this.s.appendCounterTo).insertAdjacentHTML('beforeend', '<div id="lg-counter"><input type="number" min="1" max="' + _this.count + '" id="lg-counter-current" value="' + (parseInt(_this.index, 10) + 1) + '" /> / <span id="lg-counter-all">' + _this.count + '</span></div>');
+
+        utils.on(document.getElementById('lg-counter-current'), 'keyup.lg change.lg', function(e) {
+            console.log(e);
+            if ((e.type == 'keyup' && e.keyCode === 13) || e.type == 'change') {
+                e.preventDefault();
+                var index = parseInt(this.value, 10);
+                if (!index) {
+                    this.value = _this.index + 1;
+                    return;
+                }
+                _this.slideTo(index);
+            }
+        });
     }
 };
 
@@ -545,7 +571,7 @@ Plugin.prototype.preload = function(index) {
     var i = 1;
     var j = 1;
     for (i = 1; i <= this.s.preload; i++) {
-        if (i >= this.items.length - index) {
+        if (i >= this.count - index) {
             break;
         }
 
@@ -932,7 +958,7 @@ Plugin.prototype.slide = function(index, fromTouch, fromThumb) {
 
         if (this.s.counter) {
             if (document.getElementById('lg-counter-current')) {
-                document.getElementById('lg-counter-current').innerHTML = index + 1;
+                document.getElementById('lg-counter-current').value = index + 1;
             }
         }
 
@@ -986,7 +1012,7 @@ Plugin.prototype.goToPrevSlide = function(fromTouch) {
             _this.slide(_this.index, fromTouch, false);
         } else {
             if (_this.s.loop) {
-                _this.index = _this.items.length - 1;
+                _this.index = _this.count - 1;
                 utils.trigger(_this.el, 'onBeforePrevSlide', {
                     index: _this.index,
                     fromTouch: fromTouch
@@ -1002,11 +1028,29 @@ Plugin.prototype.goToPrevSlide = function(fromTouch) {
     }
 };
 
+/**
+ *  @desc Slide to index
+ *  @param {Number} index - slide index
+ */
+Plugin.prototype.slideTo = function(index) {
+    var _this = this;
+    if (!_this.lgBusy) {
+        index = Math.max(Math.min(index, _this.count), 1) - 1;
+        _this.index = index;
+
+        utils.trigger(_this.el, 'onBeforeSlideTo', {
+            index: _this.index
+        });
+
+        _this.slide(_this.index, false, false);
+    }
+};
+
 Plugin.prototype.keyPress = function() {
     var _this = this;
-    if (this.items.length > 1) {
+    if (this.count > 1) {
         utils.on(window, 'keyup.lg', function(e) {
-            if (_this.items.length > 1) {
+            if (_this.count > 1) {
                 if (e.keyCode === 37) {
                     e.preventDefault();
                     _this.goToPrevSlide();
@@ -1072,7 +1116,8 @@ Plugin.prototype.setTranslate = function(el, xValue, yValue) {
     if (this.s.useLeft) {
         el.style.left = xValue;
     } else {
-        utils.setVendor(el, 'Transform', 'translate3d(' + (xValue) + 'px, ' + yValue + 'px, 0px)');
+        //utils.setVendor(el, 'Transform', 'translate3d(' + (xValue) + 'px, ' + yValue + 'px, 0px)');
+        utils.setVendor(el, 'Transform', 'translate(' + xValue + 'px, ' + yValue + 'px)');
     }
 };
 
@@ -1281,9 +1326,9 @@ Plugin.prototype.mousewheel = function() {
         }
 
         if (e.deltaY > 0) {
-            _this.goToPrevSlide();
-        } else {
             _this.goToNextSlide();
+        } else {
+            _this.goToPrevSlide();
         }
 
         e.preventDefault();
@@ -1295,9 +1340,11 @@ Plugin.prototype.closeGallery = function() {
 
     var _this = this;
     var mousedown = false;
-    utils.on(this.outer.querySelector('.lg-close'), 'click.lg', function() {
-        _this.destroy();
-    });
+    if (_this.s.close) {
+        utils.on(this.outer.querySelector('.lg-close'), 'click.lg', function() {
+            _this.destroy();
+        });
+    }
 
     if (_this.s.closable) {
 
@@ -1349,7 +1396,7 @@ Plugin.prototype.destroy = function(d) {
         if (!_this.s.dynamic) {
             // only when not using dynamic mode is $items a jquery collection
 
-            for (var i = 0; i < this.items.length; i++) {
+            for (var i = 0; i < this.count; i++) {
                 utils.off(this.items[i], '.lg');
                 utils.off(this.items[i], '.lgcustom');
             }
@@ -1382,26 +1429,28 @@ Plugin.prototype.destroy = function(d) {
         utils.removeClass(_this.outer, 'lg-visible');
     }
 
-    utils.removeClass(document.querySelector('.lg-backdrop'), 'in');
-    setTimeout(function() {
-        try {
-            if (_this.outer) {
-                _this.outer.parentNode.removeChild(_this.outer);
-            }
+    if (this.s.mask) {
+        utils.removeClass(document.querySelector('.lg-backdrop'), 'in');
+        setTimeout(function() {
+            try {
+                if (_this.outer) {
+                    _this.outer.parentNode.removeChild(_this.outer);
+                }
 
-            if (document.querySelector('.lg-backdrop')) {
-                document.querySelector('.lg-backdrop').parentNode.removeChild(document.querySelector('.lg-backdrop'));
-            }
+                if (document.querySelector('.lg-backdrop')) {
+                    document.querySelector('.lg-backdrop').parentNode.removeChild(document.querySelector('.lg-backdrop'));
+                }
 
-            if (!d) {
-                utils.trigger(_this.el, 'onCloseAfter');
-            }
-        } catch (err) {}
+                if (!d) {
+                    utils.trigger(_this.el, 'onCloseAfter');
+                }
+            } catch (err) {}
 
-    }, _this.s.backdropDuration + 50);
+        }, _this.s.backdropDuration + 50);
+    }
 };
 
-window.lightGallery = function(el, options) {
+let lightGallery = function(el, options) {
     if (!el) {
         return;
     }
@@ -1422,3 +1471,6 @@ window.lightGallery = function(el, options) {
         console.error('lightGallery has not initiated properly');
     }
 };
+
+window.lightGallery = lightGallery;
+export default lightGallery;
