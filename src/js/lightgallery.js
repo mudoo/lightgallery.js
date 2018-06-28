@@ -1430,15 +1430,16 @@ Plugin.prototype.destroy = function(d) {
     }
 
     if (this.s.mask) {
-        utils.removeClass(document.querySelector('.lg-backdrop'), 'in');
+    	var backdrop = document.querySelector('.lg-backdrop')
+        utils.removeClass(backdrop, 'in');
         setTimeout(function() {
             try {
                 if (_this.outer) {
                     _this.outer.parentNode.removeChild(_this.outer);
                 }
 
-                if (document.querySelector('.lg-backdrop')) {
-                    document.querySelector('.lg-backdrop').parentNode.removeChild(document.querySelector('.lg-backdrop'));
+                if (backdrop) {
+                    backdrop.parentNode.removeChild(backdrop);
                 }
 
                 if (!d) {
@@ -1447,6 +1448,15 @@ Plugin.prototype.destroy = function(d) {
             } catch (err) {}
 
         }, _this.s.backdropDuration + 50);
+    }else{
+        try {
+            if (_this.outer) {
+                _this.outer.parentNode.removeChild(_this.outer);
+            }
+            if (!d) {
+                utils.trigger(_this.el, 'onCloseAfter');
+            }
+        } catch (err) {}
     }
 };
 

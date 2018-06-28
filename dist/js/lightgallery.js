@@ -1,5 +1,5 @@
 /**!
- * lightgallery.js | 1.0.1 | August 20th 2017
+ * lightgallery-embed.js | 1.0.4 | June 28th 2018
  * http://sachinchoolur.github.io/lightgallery.js/
  * Copyright (c) 2016 Sachin N; 
  * @license GPLv3 
@@ -1223,7 +1223,7 @@
     };
 
     /**
-     *  @desc Go to previous slide
+     *  @desc Slide to index
      *  @param {Number} index - slide index
      */
     Plugin.prototype.slideTo = function (index) {
@@ -1615,15 +1615,16 @@
         }
 
         if (this.s.mask) {
-            _lgUtils2.default.removeClass(document.querySelector('.lg-backdrop'), 'in');
+            var backdrop = document.querySelector('.lg-backdrop');
+            _lgUtils2.default.removeClass(backdrop, 'in');
             setTimeout(function () {
                 try {
                     if (_this.outer) {
                         _this.outer.parentNode.removeChild(_this.outer);
                     }
 
-                    if (document.querySelector('.lg-backdrop')) {
-                        document.querySelector('.lg-backdrop').parentNode.removeChild(document.querySelector('.lg-backdrop'));
+                    if (backdrop) {
+                        backdrop.parentNode.removeChild(backdrop);
                     }
 
                     if (!d) {
@@ -1631,6 +1632,15 @@
                     }
                 } catch (err) {}
             }, _this.s.backdropDuration + 50);
+        } else {
+            try {
+                if (_this.outer) {
+                    _this.outer.parentNode.removeChild(_this.outer);
+                }
+                if (!d) {
+                    _lgUtils2.default.trigger(_this.el, 'onCloseAfter');
+                }
+            } catch (err) {}
         }
     };
 
