@@ -50,6 +50,7 @@ var defaults = {
     useLeft: false,
 
     close: true,
+    removeOnClose: false,
     closable: true,
     loop: true,
     escKey: true,
@@ -1392,7 +1393,7 @@ Plugin.prototype.destroy = function(d) {
      * if d is true destroy will completely remove the plugin
      */
 
-    if (d) {
+    if (d || _this.s.removeOnClose) {
         if (!_this.s.dynamic) {
             // only when not using dynamic mode is $items a jquery collection
 
