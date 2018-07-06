@@ -1,5 +1,5 @@
 /**!
- * lightgallery-embed.js | 1.0.4 | June 28th 2018
+ * lightgallery-embed.js | 1.0.5 | July 6th 2018
  * http://sachinchoolur.github.io/lightgallery.js/
  * Copyright (c) 2016 Sachin N; 
  * @license GPLv3 
@@ -268,6 +268,7 @@
         useLeft: false,
 
         close: true,
+        removeOnClose: false,
         closable: true,
         loop: true,
         escKey: true,
@@ -1577,7 +1578,7 @@
          * if d is true destroy will completely remove the plugin
          */
 
-        if (d) {
+        if (d || _this.s.removeOnClose) {
             if (!_this.s.dynamic) {
                 // only when not using dynamic mode is $items a jquery collection
 
