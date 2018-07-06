@@ -90,6 +90,7 @@ var defaults = {
 
     download: true,
     counter: true,
+    counterJump: false,
     appendCounterTo: '.lg-toolbar',
 
     swipeThreshold: 50,
@@ -491,20 +492,24 @@ Plugin.prototype.isVideo = function(src, index) {
 Plugin.prototype.counter = function() {
     var _this = this;
     if (_this.s.counter) {
-        _this.outer.querySelector(_this.s.appendCounterTo).insertAdjacentHTML('beforeend', '<div id="lg-counter"><input type="number" min="1" max="' + _this.count + '" id="lg-counter-current" value="' + (parseInt(_this.index, 10) + 1) + '" /> / <span id="lg-counter-all">' + _this.count + '</span></div>');
+        if(_this.s.counterJump) {
+            _this.outer.querySelector(_this.s.appendCounterTo).insertAdjacentHTML('beforeend', '<div id="lg-counter"><input type="number" min="1" max="' + _this.count + '" id="lg-counter-current" value="' + (parseInt(_this.index, 10) + 1) + '" /> / <span id="lg-counter-all">' + _this.count + '</span></div>');
 
-        utils.on(document.getElementById('lg-counter-current'), 'keyup.lg change.lg', function(e) {
-            console.log(e);
-            if ((e.type == 'keyup' && e.keyCode === 13) || e.type == 'change') {
-                e.preventDefault();
-                var index = parseInt(this.value, 10);
-                if (!index) {
-                    this.value = _this.index + 1;
-                    return;
+            utils.on(document.getElementById('lg-counter-current'), 'keyup.lg change.lg', function(e) {
+                console.log(e);
+                if ((e.type == 'keyup' && e.keyCode === 13) || e.type == 'change') {
+                    e.preventDefault();
+                    var index = parseInt(this.value, 10);
+                    if (!index) {
+                        this.value = _this.index + 1;
+                        return;
+                    }
+                    _this.slideTo(index);
                 }
-                _this.slideTo(index);
-            }
-        });
+            });
+        }else{
+            this.outer.querySelector(this.s.appendCounterTo).insertAdjacentHTML('beforeend', '<div id="lg-counter"><span id="lg-counter-current">' + (parseInt(this.index, 10) + 1) + '</span> / <span id="lg-counter-all">' + this.items.length + '</span></div>');
+        }
     }
 };
 
@@ -795,21 +800,29 @@ Plugin.prototype.loadContent = function(index, rec, delay) {
 */
 Plugin.prototype.slide = function(index, fromTouch, fromThumb) {
 
-    var _prevIndex = 0;
-    for (var i = 0; i < this.___slide.length; i++) {
-        if (utils.hasClass(this.___slide[i], 'lg-current')) {
-            _prevIndex = i;
-            break;
-        }
-    }
+    // var _prevIndex = 0;
+    // for (var i = 0; i < this.___slide.length; i++) {
+    //     if (utils.hasClass(this.___slide[i], 'lg-current')) {
+    //         _prevIndex = i;
+    //         break;
+    //     }
+    // }
 
     var _this = this;
+
+    var _prevIndex = _this.prevIndex || 0
+
+    // index = Math.max(Math.min(index, _this.count), 1) - 1;
+    index = Math.min(_this.count-1, Math.max(0, index))
 
     // Prevent if multiple call
     // Required for hsh plugin
     if (_this.lGalleryOn && (_prevIndex === index)) {
         return;
     }
+
+    _this.index = index;
+    _this.prevIndex = index;
 
     var _length = this.___slide.length;
     var _time = _this.lGalleryOn ? this.s.speed : 0;
@@ -959,7 +972,11 @@ Plugin.prototype.slide = function(index, fromTouch, fromThumb) {
 
         if (this.s.counter) {
             if (document.getElementById('lg-counter-current')) {
-                document.getElementById('lg-counter-current').value = index + 1;
+                if(this.s.counterJump) {
+                    document.getElementById('lg-counter-current').value = index + 1;
+                }else{
+                    document.getElementById('lg-counter-current').innerHTML = index + 1;
+                }
             }
         }
 
@@ -972,21 +989,22 @@ Plugin.prototype.slide = function(index, fromTouch, fromThumb) {
  *  @param {Boolean} fromTouch - true if slide function called via touch event
  */
 Plugin.prototype.goToNextSlide = function(fromTouch) {
-    var _this = this;
+    var _this = this,
+        index;
     if (!_this.lgBusy) {
         if ((_this.index + 1) < _this.___slide.length) {
-            _this.index++;
+            index = _this.index+1;
             utils.trigger(_this.el, 'onBeforeNextSlide', {
-                index: _this.index
+                index: index
             });
-            _this.slide(_this.index, fromTouch, false);
+            _this.slide(index, fromTouch, false);
         } else {
             if (_this.s.loop) {
-                _this.index = 0;
+                index = 0;
                 utils.trigger(_this.el, 'onBeforeNextSlide', {
-                    index: _this.index
+                    index: index
                 });
-                _this.slide(_this.index, fromTouch, false);
+                _this.slide(index, fromTouch, false);
             } else if (_this.s.slideEndAnimatoin) {
                 utils.addClass(_this.outer, 'lg-right-end');
                 setTimeout(function() {
@@ -1002,23 +1020,24 @@ Plugin.prototype.goToNextSlide = function(fromTouch) {
  *  @param {Boolean} fromTouch - true if slide function called via touch event
  */
 Plugin.prototype.goToPrevSlide = function(fromTouch) {
-    var _this = this;
+    var _this = this,
+        index;
     if (!_this.lgBusy) {
         if (_this.index > 0) {
-            _this.index--;
+            index = _this.index-1;
             utils.trigger(_this.el, 'onBeforePrevSlide', {
-                index: _this.index,
+                index: index,
                 fromTouch: fromTouch
             });
-            _this.slide(_this.index, fromTouch, false);
+            _this.slide(index, fromTouch, false);
         } else {
             if (_this.s.loop) {
-                _this.index = _this.count - 1;
+                index = _this.count - 1;
                 utils.trigger(_this.el, 'onBeforePrevSlide', {
-                    index: _this.index,
+                    index: index,
                     fromTouch: fromTouch
                 });
-                _this.slide(_this.index, fromTouch, false);
+                _this.slide(index, fromTouch, false);
             } else if (_this.s.slideEndAnimatoin) {
                 utils.addClass(_this.outer, 'lg-left-end');
                 setTimeout(function() {
@@ -1036,14 +1055,11 @@ Plugin.prototype.goToPrevSlide = function(fromTouch) {
 Plugin.prototype.slideTo = function(index) {
     var _this = this;
     if (!_this.lgBusy) {
-        index = Math.max(Math.min(index, _this.count), 1) - 1;
-        _this.index = index;
-
         utils.trigger(_this.el, 'onBeforeSlideTo', {
-            index: _this.index
+            index: index
         });
 
-        _this.slide(_this.index, false, false);
+        _this.slide(index, false, false);
     }
 };
 
