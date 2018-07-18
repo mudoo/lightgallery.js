@@ -504,7 +504,7 @@ Plugin.prototype.counter = function() {
                         this.value = _this.index + 1;
                         return;
                     }
-                    _this.slideTo(index);
+                    _this.slideTo(index-1);
                 }
             });
         }else{
